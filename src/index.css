@@ -110,7 +110,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Mobile Optimizations */
 .mobile-container {
-  @apply px-4 md:px-6 w-full max-w-screen;
+  @apply px-4 md:px-6 w-full max-w-full;
 }
 
 .mobile-bottom-bar {
