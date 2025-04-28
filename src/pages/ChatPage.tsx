@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Zap, Send, Copy, Check } from 'lucide-react';
 import ChatNavbar from '@/components/ChatNavbar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { openaiService } from '@/services/openaiService';
+import { promptService, UserInfo } from '@/services/promptService';
 
 // Types for our chat messages
 type MessageRole = 'ai' | 'user';
@@ -17,6 +19,12 @@ interface Message {
   content: string;
   isTyping?: boolean;
   timestamp: Date;
+}
+
+interface ProductIdea {
+  title: string;
+  description: string;
+  price: string;
 }
 
 // Chat message component
@@ -72,52 +80,111 @@ const ChatMessage = ({ message }: { message: Message }) => {
     );
   };
   
-  // Function to check if content is a product idea
-  const isProductIdea = (content: string) => {
-    return content.includes("[Product Idea") && content.includes("Title:") && content.includes("Description:");
+  // Function to parse product ideas from content
+  const parseProductIdeas = (content: string): ProductIdea[] => {
+    const ideas: ProductIdea[] = [];
+    
+    // Match patterns like "🎯 Product Idea 1: Product Title" followed by "💡 description" and "💸 Suggested Price: $X"
+    const matches = content.match(/🎯[^🎯]*?💡[^💸]*?💸[^🎯]*/g);
+    
+    if (matches) {
+      matches.forEach(match => {
+        const titleMatch = match.match(/🎯.*?:(.*?)(?=\n|$)/);
+        const descriptionMatch = match.match(/💡(.*?)(?=\n|$)/);
+        const priceMatch = match.match(/💸.*?:(.*?)(?=\n|$)/);
+        
+        if (titleMatch && descriptionMatch && priceMatch) {
+          ideas.push({
+            title: titleMatch[1].trim(),
+            description: descriptionMatch[1].trim(),
+            price: priceMatch[1].trim()
+          });
+        }
+      });
+    }
+    
+    return ideas;
   };
   
-  // Function to format product idea
-  const formatProductIdea = (content: string) => {
-    if (!isProductIdea(content)) return content;
+  // Function to check if content contains product ideas
+  const isProductIdeas = (content: string) => {
+    return content.includes("🎯 Product Idea 1") || 
+           content.includes("[Product Idea 1]") ||
+           (content.includes("Product Idea") && content.includes("💡") && content.includes("💸"));
+  };
+  
+  // Function to format product ideas
+  const formatProductIdeas = (content: string) => {
+    if (!isProductIdeas(content)) return content;
     
-    const productMatches = content.match(/\[Product Idea \d+\]([\s\S]*?)(?=\[Product Idea \d+\]|$)/g);
+    // Try to parse the new format with emojis
+    const ideas = parseProductIdeas(content);
     
-    if (!productMatches) return content;
+    // If we couldn't parse any ideas, display the content as is
+    if (ideas.length === 0) {
+      // Fall back to the old format
+      const productMatches = content.match(/\[Product Idea \d+\]([\s\S]*?)(?=\[Product Idea \d+\]|$)/g);
+      
+      if (!productMatches) return content;
+      
+      return (
+        <div className="space-y-4">
+          {productMatches.map((product, idx) => {
+            const title = product.match(/Title: (.*?)(?:\n|$)/)?.[1] || "";
+            const description = product.match(/Description: (.*?)(?:\n|$)/)?.[1] || "";
+            const price = product.match(/Price: (.*?)(?:\n|$)/)?.[1] || "";
+            
+            return (
+              <div key={idx} className="product-idea bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <h3 className="text-lg font-bold text-accent">{title}</h3>
+                <p className="my-2 text-blynk-grey">{description}</p>
+                <p className="font-semibold text-primary">{price}</p>
+                <div className="mt-3">
+                  <Button 
+                    size="sm" 
+                    className="bg-accent hover:bg-accent/90 text-white"
+                    onClick={() => generateLandingPage(title, description)}
+                  >
+                    Get Landing Page Copy
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
     
+    // Display the new format with emojis
     return (
       <div className="space-y-4">
-        {productMatches.map((product, idx) => {
-          const title = product.match(/Title: (.*?)(?:\n|$)/)?.[1] || "";
-          const description = product.match(/Description: (.*?)(?:\n|$)/)?.[1] || "";
-          const price = product.match(/Price: (.*?)(?:\n|$)/)?.[1] || "";
-          
-          return (
-            <div key={idx} className="product-idea bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <h3 className="text-lg font-bold text-accent">{title}</h3>
-              <p className="my-2 text-blynk-grey">{description}</p>
-              <p className="font-semibold text-primary">{price}</p>
-              <div className="mt-3">
-                <Button 
-                  size="sm" 
-                  className="bg-accent hover:bg-accent/90 text-white"
-                  onClick={() => generateLandingPage(title, description)}
-                >
-                  Get Landing Page Copy
-                </Button>
-              </div>
+        {ideas.map((idea, idx) => (
+          <div key={idx} className="product-idea bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 className="text-lg font-bold text-accent">{idea.title}</h3>
+            <p className="my-2 text-blynk-grey">{idea.description}</p>
+            <p className="font-semibold text-primary">{idea.price}</p>
+            <div className="mt-3">
+              <Button 
+                size="sm" 
+                className="bg-accent hover:bg-accent/90 text-white"
+                onClick={() => generateLandingPage(idea.title, idea.description)}
+              >
+                Get Landing Page Copy
+              </Button>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   };
   
-  // Function to generate landing page - this would normally interact with the AI
+  // Function to generate landing page - this would interact with the AI
   const generateLandingPage = (title: string, description: string) => {
-    // This is a placeholder - in a real app, you'd send this to the AI
-    console.log(`Generate landing page for: ${title}`);
-    // This would trigger an action to add a new AI message with landing page copy
+    // Create a custom event that the parent component will listen for
+    const event = new CustomEvent('generateLandingPage', { 
+      detail: { title, description } 
+    });
+    document.dispatchEvent(event);
   };
   
   return (
@@ -142,8 +209,8 @@ const ChatMessage = ({ message }: { message: Message }) => {
           <div className="prose prose-sm max-w-none dark:prose-invert">
             {isLandingPageCopy(message.content) 
               ? formatLandingPageCopy(message.content)
-              : isProductIdea(message.content)
-                ? formatProductIdea(message.content)
+              : isProductIdeas(message.content)
+                ? formatProductIdeas(message.content)
                 : message.content.split('\n').map((line, i) => <p key={i} className="text-blynk-grey">{line}</p>)
             }
           </div>
@@ -160,6 +227,13 @@ const ChatPage = () => {
   const [isAITyping, setIsAITyping] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [freeCounter, setFreeCounter] = useState(1);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    niche: '',
+    platform: '',
+    audienceSize: '',
+    contentStyle: '',
+    skills: ''
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -176,47 +250,28 @@ const ChatPage = () => {
   
   // Encouraging responses for each question
   const encouragingResponses = [
-    (input: string) => `${input}? Nice! That's a hot market with plenty of monetization opportunities. 🔥`,
-    (input: string) => `${input} is perfect for visual products! Let's create something that pops on those feeds.`,
-    (input: string) => `With ${input} followers, you've got a solid foundation. Even small audiences convert well with the right offer!`,
-    (input: string) => `Love that ${input} vibe! We'll make sure your product matches that energy.`,
-    (input: string) => `${input} is exactly the kind of expertise people will pay for! Let's package this up.`
+    (input: string) => {
+      setUserInfo(prev => ({ ...prev, niche: input }));
+      return `${input}? Nice! That's a hot market with plenty of monetization opportunities. 🔥`;
+    },
+    (input: string) => {
+      setUserInfo(prev => ({ ...prev, platform: input }));
+      return `${input} is perfect for visual products! Let's create something that pops on those feeds.`;
+    },
+    (input: string) => {
+      setUserInfo(prev => ({ ...prev, audienceSize: input }));
+      return `With ${input} followers, you've got a solid foundation. Even small audiences convert well with the right offer!`;
+    },
+    (input: string) => {
+      setUserInfo(prev => ({ ...prev, contentStyle: input }));
+      return `Love that ${input} vibe! We'll make sure your product matches that energy.`;
+    },
+    (input: string) => {
+      setUserInfo(prev => ({ ...prev, skills: input }));
+      return `${input} is exactly the kind of expertise people will pay for! Let's package this up.`;
+    }
   ];
   
-  // Product ideas response - would normally come from GPT-4
-  const productIdeasResponse = `Based on what you've shared, here are 3 digital products that would resonate with your audience:
-
-[Product Idea 1]
-Title: "15-Minute Desk Workouts Bundle"
-Description: A collection of 30 quick workout routines that busy professionals can do right at their desk or in a small office space.
-Price: $27
-
-[Product Idea 2]
-Title: "Corporate Warrior Meal Prep Guide"
-Description: A time-saving meal prep system designed specifically for busy professionals with 50+ quick recipes and a 4-week planning calendar.
-Price: $39
-
-[Product Idea 3]
-Title: "The Executive Reset Challenge"
-Description: A 14-day fitness reset program with minimal equipment, designed for business travelers and professionals with unpredictable schedules.
-Price: $49
-
-Want landing page copy for any of these? Just click "Get Landing Page Copy" below the idea you like!`;
-
-  // Landing page copy response - would normally come from GPT-4
-  const landingPageResponse = `Here's your launch-ready landing page copy:
-
-HEADLINE: 15-Minute Desk Workouts That Actually Work
-
-SUBHEADLINE: Transform Your Office Space Into A Fat-Burning Zone (Without Looking Crazy or Getting Sweaty)
-
-BENEFITS:
-- Burn 200+ calories daily without ever leaving your desk or disrupting your workflow
-- Master 30 discreet exercises that strengthen your core and improve posture while you work
-- End workday fatigue with energizing micro-workouts scientifically proven to boost productivity
-
-CTA: GRAB YOUR DESK WORKOUT BUNDLE NOW`;
-
   // Upgrade message - would appear after using free session
   const upgradeMessage = `Out of free ideas? Unlock Blynk Pro for unlimited plays and custom product visuals 🚀.
 
@@ -244,10 +299,22 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
         }
       ]);
     }, 500);
+    
+    // Add event listener for landing page generation
+    const handleGenerateLandingPage = (event: Event) => {
+      const { title, description } = (event as CustomEvent).detail;
+      handleLandingPageGeneration(title, description);
+    };
+    
+    document.addEventListener('generateLandingPage', handleGenerateLandingPage);
+    
+    return () => {
+      document.removeEventListener('generateLandingPage', handleGenerateLandingPage);
+    };
   }, []);
 
   // Function to simulate AI thinking and typing
-  const simulateAIResponse = (response: string) => {
+  const simulateAIResponse = async (response: string) => {
     setIsAITyping(true);
     
     // Add a typing indicator message
@@ -272,6 +339,64 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
       }]);
       setIsAITyping(false);
     }, 1500); // Adjust timing as needed
+  };
+  
+  // Function to generate product ideas using the OpenAI service
+  const generateProductIdeas = async () => {
+    try {
+      // Create the prompt using the promptService
+      const messages = promptService.generateProductIdeasPrompt(userInfo);
+      
+      // Call the OpenAI service to generate content
+      const response = await openaiService.generateContent(messages);
+      
+      // Simulate AI response
+      simulateAIResponse(response);
+      
+      // Decrement free counter
+      setFreeCounter(prev => prev - 1);
+    } catch (error) {
+      console.error('Error generating product ideas:', error);
+      toast({
+        title: "Generation Failed",
+        description: "We couldn't generate product ideas. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Function to generate landing page copy
+  const handleLandingPageGeneration = async (title: string, description: string) => {
+    if (freeCounter <= 0) {
+      simulateAIResponse(upgradeMessage);
+      toast({
+        title: "Free limit reached",
+        description: "Upgrade to Blynk Pro for unlimited generations.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Create the prompt using the promptService
+      const messages = promptService.generateLandingPagePrompt(title, description);
+      
+      // Call the OpenAI service to generate content
+      const response = await openaiService.generateContent(messages);
+      
+      // Simulate AI response
+      simulateAIResponse(response);
+      
+      // Decrement free counter
+      setFreeCounter(prev => prev - 1);
+    } catch (error) {
+      console.error('Error generating landing page:', error);
+      toast({
+        title: "Generation Failed",
+        description: "We couldn't generate the landing page copy. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle user input submission
@@ -306,9 +431,7 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
         } else {
           // If it was the last question, generate product ideas
           setTimeout(() => {
-            simulateAIResponse(productIdeasResponse);
-            // Decrement free counter
-            setFreeCounter(prev => prev - 1);
+            generateProductIdeas();
           }, 2000);
         }
       }, 1000);
@@ -316,8 +439,7 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
       // If user asks for landing page copy directly
       if (freeCounter > 0) {
         setTimeout(() => {
-          simulateAIResponse(landingPageResponse);
-          setFreeCounter(prev => prev - 1);
+          simulateAIResponse(`Let me help you with that landing page copy. Please click "Get Landing Page Copy" under one of the product ideas to proceed.`);
         }, 1000);
       } else {
         // Show upgrade message
@@ -325,12 +447,11 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
           simulateAIResponse(upgradeMessage);
         }, 1000);
       }
-    } else if (input.toLowerCase().includes("yes")) {
-      // If user says yes to something (like generating landing page)
+    } else if (input.toLowerCase().includes("ideas") || input.toLowerCase().includes("products")) {
+      // If user asks for more product ideas
       if (freeCounter > 0) {
         setTimeout(() => {
-          simulateAIResponse(landingPageResponse);
-          setFreeCounter(prev => prev - 1);
+          generateProductIdeas();
         }, 1000);
       } else {
         // Show upgrade message
@@ -341,23 +462,8 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
     } else {
       // Handle general chat
       setTimeout(() => {
-        simulateAIResponse("I'm here to help you create viral digital products! Let me know what you're looking for.");
+        simulateAIResponse("I'm here to help you create viral digital products! Let me know if you need more product ideas or landing page copy.");
       }, 1000);
-    }
-  };
-
-  // Function that would be called by the "Get Landing Page Copy" button
-  const handleGetLandingPage = () => {
-    if (freeCounter > 0) {
-      simulateAIResponse(landingPageResponse);
-      setFreeCounter(prev => prev - 1);
-    } else {
-      simulateAIResponse(upgradeMessage);
-      toast({
-        title: "Free limit reached",
-        description: "Upgrade to Blynk Pro for unlimited generations.",
-        variant: "destructive"
-      });
     }
   };
 
