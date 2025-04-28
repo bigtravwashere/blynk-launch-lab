@@ -14,26 +14,26 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 224 76% 65%;
+    --primary: 198 16% 34%; /* Grey #4F5D61 */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 157 100% 50%;
+    --secondary: 186 14% 66%; /* Light Blue #99B3B6 */
     --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 16 100% 60%; /* Orange #FF6E35 */
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 224 76% 65%;
+    --ring: 198 16% 34%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -46,16 +46,16 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 224 76% 65%;
+    --primary: 198 16% 34%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 157 100% 50%;
+    --secondary: 186 14% 66%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 16 100% 60%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -63,7 +63,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224 76% 65%;
+    --ring: 198 16% 34%;
   }
 }
 
@@ -72,20 +72,51 @@
     @apply border-border;
   }
 
+  html, body {
+    @apply overscroll-none antialiased;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans tracking-tighter;
   }
 }
 
+/* Refined Typography Styles */
+h1, h2, h3, h4, h5, h6 {
+  @apply tracking-tighter font-medium text-primary;
+}
+
+.luxurious-card {
+  @apply bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl;
+}
+
+.glass-effect {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+/* Chat UI Enhancements */
 .typing-animation {
   @apply overflow-hidden whitespace-nowrap border-r-4 border-blynk-blue;
   animation: typing 3.5s steps(40, end), blink 0.75s step-end infinite;
 }
 
 .chat-bubble-ai {
-  @apply rounded-2xl p-4 bg-gradient-to-r from-blynk-blue to-blynk-mint bg-opacity-10 text-foreground max-w-3xl animate-fade-in;
+  @apply rounded-2xl p-4 bg-gradient-to-r from-blynk-blue/20 to-blynk-blue/10 text-primary max-w-3xl animate-fade-in;
 }
 
 .chat-bubble-user {
-  @apply rounded-2xl p-4 bg-gradient-to-br from-blynk-blue to-blynk-blue bg-opacity-10 text-foreground max-w-3xl ml-auto animate-fade-in;
+  @apply rounded-2xl p-4 bg-gradient-to-br from-accent/10 to-accent/5 text-primary max-w-3xl ml-auto animate-fade-in;
+}
+
+/* Mobile Optimizations */
+.mobile-container {
+  @apply px-4 md:px-6 w-full max-w-screen;
+}
+
+.mobile-bottom-bar {
+  @apply fixed bottom-0 w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-3 backdrop-blur-md bg-white/80;
+}
+
+.mobile-safe-area {
+  @apply pb-16 md:pb-0;
 }

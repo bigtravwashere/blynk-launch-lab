@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Zap, Send, Copy, Check } from 'lucide-react';
 import ChatNavbar from '@/components/ChatNavbar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Types for our chat messages
 type MessageRole = 'ai' | 'user';
@@ -21,6 +22,7 @@ interface Message {
 // Chat message component
 const ChatMessage = ({ message }: { message: Message }) => {
   const [copied, setCopied] = useState(false);
+  const isMobile = useIsMobile();
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -38,20 +40,20 @@ const ChatMessage = ({ message }: { message: Message }) => {
     if (!isLandingPageCopy(content)) return content;
     
     return (
-      <div className="landing-page-copy bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="landing-page-copy bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
         {content.split('\n').map((line, index) => {
           if (line.startsWith("HEADLINE:")) {
-            return <h3 key={index} className="text-xl font-bold mb-2">{line.replace("HEADLINE:", "").trim()}</h3>;
+            return <h3 key={index} className="text-lg md:text-xl font-bold mb-2 text-primary">{line.replace("HEADLINE:", "").trim()}</h3>;
           } else if (line.startsWith("SUBHEADLINE:")) {
-            return <p key={index} className="text-lg mb-4">{line.replace("SUBHEADLINE:", "").trim()}</p>;
+            return <p key={index} className="text-base md:text-lg mb-4 text-primary">{line.replace("SUBHEADLINE:", "").trim()}</p>;
           } else if (line.startsWith("BENEFITS:")) {
-            return <h4 key={index} className="font-semibold mt-2 mb-1">{line}</h4>;
+            return <h4 key={index} className="font-semibold mt-2 mb-1 text-primary">{line}</h4>;
           } else if (line.startsWith("- ")) {
-            return <p key={index} className="pl-2 mb-1">• {line.replace("- ", "")}</p>;
+            return <p key={index} className="pl-2 mb-1 text-blynk-grey">• {line.replace("- ", "")}</p>;
           } else if (line.startsWith("CTA:")) {
-            return <p key={index} className="font-bold mt-3 text-blynk-blue">{line.replace("CTA:", "").trim()}</p>;
+            return <p key={index} className="font-bold mt-3 text-accent">{line.replace("CTA:", "").trim()}</p>;
           } else {
-            return <p key={index}>{line}</p>;
+            return <p key={index} className="text-blynk-grey">{line}</p>;
           }
         })}
         
@@ -60,7 +62,7 @@ const ChatMessage = ({ message }: { message: Message }) => {
             variant="outline" 
             size="sm" 
             onClick={() => copyToClipboard(content)}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 border-blynk-blue text-blynk-blue hover:bg-blynk-blue/10"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy to Clipboard'}
@@ -91,14 +93,14 @@ const ChatMessage = ({ message }: { message: Message }) => {
           const price = product.match(/Price: (.*?)(?:\n|$)/)?.[1] || "";
           
           return (
-            <div key={idx} className="product-idea bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-bold text-blynk-blue">{title}</h3>
-              <p className="my-2">{description}</p>
-              <p className="font-semibold">{price}</p>
+            <div key={idx} className="product-idea bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+              <h3 className="text-lg font-bold text-accent">{title}</h3>
+              <p className="my-2 text-blynk-grey">{description}</p>
+              <p className="font-semibold text-primary">{price}</p>
               <div className="mt-3">
                 <Button 
                   size="sm" 
-                  className="bg-blynk-blue hover:bg-blynk-blue/90"
+                  className="bg-accent hover:bg-accent/90 text-white"
                   onClick={() => generateLandingPage(title, description)}
                 >
                   Get Landing Page Copy
@@ -122,19 +124,19 @@ const ChatMessage = ({ message }: { message: Message }) => {
     <div className={`mb-4 ${message.role === 'ai' ? 'chat-bubble-ai' : 'chat-bubble-user'}`}>
       {message.role === 'ai' && (
         <div className="flex items-center mb-2">
-          <div className="w-8 h-8 rounded-full bg-blynk-blue flex items-center justify-center text-white mr-2">
+          <div className="w-8 h-8 rounded-full bg-blynk-blue flex items-center justify-center text-white mr-2 shadow-sm">
             <Zap size={16} />
           </div>
-          <span className="font-semibold">Blynk</span>
+          <span className="font-medium text-primary">Blynk</span>
         </div>
       )}
       
       <div className="message-content">
         {message.isTyping ? (
           <div className="typing-indicator flex space-x-2">
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-150"></div>
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-300"></div>
+            <div className="w-2 h-2 rounded-full bg-blynk-grey animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-blynk-grey animate-pulse delay-150"></div>
+            <div className="w-2 h-2 rounded-full bg-blynk-grey animate-pulse delay-300"></div>
           </div>
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -142,7 +144,7 @@ const ChatMessage = ({ message }: { message: Message }) => {
               ? formatLandingPageCopy(message.content)
               : isProductIdea(message.content)
                 ? formatProductIdea(message.content)
-                : message.content.split('\n').map((line, i) => <p key={i}>{line}</p>)
+                : message.content.split('\n').map((line, i) => <p key={i} className="text-blynk-grey">{line}</p>)
             }
           </div>
         )}
@@ -161,6 +163,7 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // Questions for the onboarding flow
   const questions = [
@@ -367,9 +370,9 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       <ChatNavbar onUpgradeClick={handleUpgradeClick} />
       
-      <main className="flex-1 overflow-y-auto p-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="chat-messages space-y-4 pb-24">
+      <main className="flex-1 overflow-y-auto p-3 md:p-4 mobile-safe-area">
+        <div className="mx-auto max-w-4xl">
+          <div className="chat-messages space-y-3 md:space-y-4 pb-20 md:pb-24">
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
@@ -378,22 +381,24 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
         </div>
       </main>
       
-      <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 w-full">
-        <div className="container mx-auto max-w-4xl">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 p-3 md:p-4 backdrop-blur-md">
+        <div className="mx-auto max-w-4xl">
           <form onSubmit={handleSubmit} className="flex items-center gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 rounded-full bg-gray-100 dark:bg-gray-700"
+              className="flex-1 rounded-full bg-gray-100 dark:bg-gray-700 border-gray-200 focus-visible:ring-blynk-blue"
               disabled={isAITyping}
             />
             <Button 
               type="submit" 
               disabled={isAITyping} 
-              className="rounded-full bg-blynk-blue hover:bg-blynk-blue/90"
+              className="rounded-full bg-accent hover:bg-accent/90 text-white shadow-sm"
+              size={isMobile ? "icon" : "default"}
             >
-              <Send size={18} />
+              <Send size={isMobile ? 16 : 18} />
+              {!isMobile && <span className="ml-1">Send</span>}
             </Button>
           </form>
           {freeCounter === 0 && (
@@ -401,7 +406,7 @@ Upgrade now to continue generating viral product ideas and launch-ready copy wit
               <Button 
                 variant="link" 
                 onClick={handleUpgradeClick}
-                className="text-blynk-blue"
+                className="text-accent text-sm"
               >
                 Upgrade to Blynk Pro for unlimited generations
               </Button>

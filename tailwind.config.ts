@@ -13,7 +13,7 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
         "2xl": "1400px",
       },
@@ -26,11 +26,12 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         blynk: {
-          blue: "#4F7FFF",
-          mint: "#00FFB2"
+          blue: "#99B3B6", // Updated to Light Blue
+          mint: "#FF6E35", // Updated to Orange
+          grey: "#4F5D61"  // Added primary grey
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "#4F5D61", // Updated to Grey
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -68,6 +69,12 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      letterSpacing: {
+        tighter: "-0.05em",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -101,9 +108,6 @@ export default {
         typing: "typing 3.5s steps(40, end)",
         blink: "blink 1s step-end infinite",
         "fade-in": "fadeIn 0.5s ease-in-out",
-      },
-      fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },
